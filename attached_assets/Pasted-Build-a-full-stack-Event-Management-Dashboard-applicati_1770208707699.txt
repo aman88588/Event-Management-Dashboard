@@ -1,0 +1,184 @@
+Build a full-stack Event Management Dashboard application.
+
+PROJECT TITLE:
+Event Management Dashboard – Unlocking Possibilities
+
+TECH STACK:
+Frontend:
+- React (with functional components & hooks)
+- React Router for routing
+- Tailwind CSS or modern CSS for responsive UI
+- Axios for API calls
+
+Backend:
+- Node.js
+- Express.js
+- MongoDB with Mongoose
+- MVC Architecture (Models, Controllers, Routes, Services)
+- JWT-based Authentication
+- Socket.IO for real-time updates
+
+DATABASE:
+MongoDB
+MongoDB URI: "your-db-connection-string"
+
+--------------------------------------------------
+FEATURE REQUIREMENTS
+--------------------------------------------------
+
+1. USER ROLES
+- Organizer
+- Normal User
+
+Role-based access and UI rendering must be implemented.
+
+--------------------------------------------------
+2. AUTHENTICATION & AUTHORIZATION
+--------------------------------------------------
+- User registration and login
+- JWT-based authentication
+- Secure password hashing using bcrypt
+- Middleware for protecting routes
+- Role-based authorization (Organizer vs User)
+
+--------------------------------------------------
+3. ORGANIZER FEATURES
+--------------------------------------------------
+Organizers should be able to:
+- Create new events
+- Update event details
+- Delete events
+- View a list of events they created
+- See real-time registration count per event
+- Set:
+  - Event title
+  - Description
+  - Date & time
+  - Location
+  - Registration deadline
+  - Maximum participants
+
+--------------------------------------------------
+4. USER FEATURES
+--------------------------------------------------
+Users should be able to:
+- Browse all available events
+- Filter events by date or location
+- View event details
+- Register for events
+- See confirmation after registration
+- Prevent duplicate registrations for the same event
+
+--------------------------------------------------
+5. EVENT REGISTRATION
+--------------------------------------------------
+- Store event registrations in MongoDB
+- Each registration should link:
+  - User ID
+  - Event ID
+  - Timestamp
+- Update registration count in real time using Socket.IO
+
+--------------------------------------------------
+6. REAL-TIME UPDATES
+--------------------------------------------------
+- Use Socket.IO to update registration count instantly
+- When a user registers:
+  - All connected clients should see updated registration numbers
+
+--------------------------------------------------
+7. NOTIFICATION SYSTEM (BONUS)
+--------------------------------------------------
+Implement notifications:
+- Notify users about:
+  - Upcoming events
+  - Registration deadlines
+- Notifications can be:
+  - In-app notifications
+  - Optional email notification structure (mock service is fine)
+
+--------------------------------------------------
+8. FRONTEND DASHBOARD
+--------------------------------------------------
+- Responsive design (desktop + mobile)
+- Separate dashboards:
+  - Organizer Dashboard
+  - User Dashboard
+- Clean UI with:
+  - Event cards
+  - Registration buttons
+  - Live registration counter
+- Protected routes using authentication state
+
+--------------------------------------------------
+9. BACKEND STRUCTURE (MVC)
+--------------------------------------------------
+Use proper MVC architecture:
+
+/server
+ ├── controllers
+ │    ├── auth.controller.js
+ │    ├── event.controller.js
+ │    ├── registration.controller.js
+ ├── models
+ │    ├── User.model.js
+ │    ├── Event.model.js
+ │    ├── Registration.model.js
+ ├── routes
+ │    ├── auth.routes.js
+ │    ├── event.routes.js
+ │    ├── registration.routes.js
+ ├── middleware
+ │    ├── auth.middleware.js
+ │    ├── role.middleware.js
+ ├── services
+ │    ├── notification.service.js
+ │    ├── socket.service.js
+ ├── config
+ │    ├── db.js
+ │    ├── socket.js
+ ├── app.js
+ ├── server.js
+
+--------------------------------------------------
+10. FRONTEND STRUCTURE
+--------------------------------------------------
+/client
+ ├── src
+ │    ├── components
+ │    ├── pages
+ │    │    ├── Login.jsx
+ │    │    ├── Register.jsx
+ │    │    ├── OrganizerDashboard.jsx
+ │    │    ├── UserDashboard.jsx
+ │    │    ├── EventDetails.jsx
+ │    ├── context
+ │    │    ├── AuthContext.jsx
+ │    ├── services
+ │    │    ├── api.js
+ │    │    ├── socket.js
+ │    ├── App.jsx
+ │    ├── main.jsx
+
+--------------------------------------------------
+11. API REQUIREMENTS
+--------------------------------------------------
+- RESTful APIs
+- Proper HTTP status codes
+- Centralized error handling
+- Input validation
+
+--------------------------------------------------
+12. DEPLOYMENT READY
+--------------------------------------------------
+- Use environment variables
+- Production-ready code
+- Clear comments and documentation
+
+--------------------------------------------------
+OUTPUT EXPECTATION
+--------------------------------------------------
+- Fully functional full-stack project
+- Clean, maintainable code
+- Scalable architecture
+- Real-time event registration updates
