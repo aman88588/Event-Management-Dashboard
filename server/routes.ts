@@ -147,7 +147,11 @@ export async function registerRoutes(
       return res.status(401).json({ message: "Unauthorized" });
     }
     try {
-      const input = api.events.create.input.parse(req.body);
+      const bodySchema = api.events.create.input.extend({
+        date: z.coerce.date(),
+        maxParticipants: z.coerce.number(),
+      });
+      const input = bodySchema.parse(req.body);
       const event = await storage.createEvent({ ...input, organizerId: (req.user as any).id });
       res.status(201).json(event);
     } catch (err) {

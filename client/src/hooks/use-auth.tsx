@@ -76,8 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return api.auth.register.responses[201].parse(await res.json());
     },
-    onSuccess: () => {
-      toast({ title: "Success!", description: "Account created. Please log in." });
+    onSuccess: (user) => {
+      queryClient.setQueryData([api.auth.me.path], user);
+      toast({ title: "Welcome!", description: `Account created for ${user.username}` });
     },
     onError: (error: Error) => {
       toast({ title: "Registration failed", description: error.message, variant: "destructive" });

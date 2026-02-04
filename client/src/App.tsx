@@ -33,7 +33,7 @@ function ProtectedRoute({
   }
 
   if (requiredRole && user.role !== requiredRole) {
-    return <Redirect to={user.role === "organizer" ? "/organizer-dashboard" : "/dashboard"} />;
+    return <Redirect to={user.role === "organizer" ? "/organizer-dashboard" : "/"} />;
   }
 
   return <Component />;
@@ -45,18 +45,7 @@ function Router() {
       <Switch>
         <Route path="/auth" component={AuthPage} />
         
-        {/* Redirect root to dashboard if logged in, otherwise auth */}
         <Route path="/">
-          {() => {
-             // We can't use hooks here easily without wrapping, 
-             // so we rely on the ProtectedRoute logic inside dedicated routes 
-             // or the AuthPage's internal redirect logic.
-             // Simplest approach: Redirect to auth, auth redirects if logged in.
-             return <Redirect to="/auth" />;
-          }}
-        </Route>
-        
-        <Route path="/dashboard">
           <ProtectedRoute component={UserDashboard} requiredRole="user" />
         </Route>
         

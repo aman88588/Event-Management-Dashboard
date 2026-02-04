@@ -26,7 +26,7 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (user) {
-      setLocation(user.role === "organizer" ? "/organizer-dashboard" : "/dashboard");
+      setLocation(user.role === "organizer" ? "/organizer-dashboard" : "/");
     }
   }, [user, setLocation]);
 
