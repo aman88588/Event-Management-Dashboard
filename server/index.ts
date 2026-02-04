@@ -1,7 +1,11 @@
+import "./env";
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+
+// ... rest of your code stays the same
 
 const app = express();
 const httpServer = createServer(app);
