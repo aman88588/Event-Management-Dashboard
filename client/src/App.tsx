@@ -1,28 +1,82 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { Layout } from "@/components/Layout";
+import { Loader2 } from "lucide-react";
+
+import AuthPage from "@/pages/auth-page";
+import UserDashboard from "@/pages/user-dashboard";
+import OrganizerDashboard from "@/pages/organizer-dashboard";
 import NotFound from "@/pages/not-found";
+
+function ProtectedRoute({ 
+  component: Component, 
+  requiredRole 
+}: { 
+  component: React.ComponentType, 
+  requiredRole?: "user" | "organizer" 
+}) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Redirect to="/auth" />;
+  }
+
+  if (requiredRole && user.role !== requiredRole) {
+    return <Redirect to={user.role === "organizer" ? "/organizer-dashboard" : "/dashboard"} />;
+  }
+
+  return <Component />;
+}
 
 function Router() {
   return (
-    <Switch>
-      {/* Add pages below */}
-      {/* <Route path="/" component={Home}/> */}
-      {/* Fallback to 404 */}
-      <Route component={NotFound} />
-    </Switch>
+    <Layout>
+      <Switch>
+        <Route path="/auth" component={AuthPage} />
+        
+        {/* Redirect root to dashboard if logged in, otherwise auth */}
+        <Route path="/">
+          {() => {
+             // We can't use hooks here easily without wrapping, 
+             // so we rely on the ProtectedRoute logic inside dedicated routes 
+             // or the AuthPage's internal redirect logic.
+             // Simplest approach: Redirect to auth, auth redirects if logged in.
+             return <Redirect to="/auth" />;
+          }}
+        </Route>
+        
+        <Route path="/dashboard">
+          <ProtectedRoute component={UserDashboard} requiredRole="user" />
+        </Route>
+        
+        <Route path="/organizer-dashboard">
+          <ProtectedRoute component={OrganizerDashboard} requiredRole="organizer" />
+        </Route>
+        
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
+      <AuthProvider>
         <Router />
-      </TooltipProvider>
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
