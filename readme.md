@@ -1,4 +1,4 @@
-cat > README.md << 'EOF'
+
 # Event Management Dashboard – Unlocking Possibilities
 
 A full-stack event management application with real-time updates, role-based access control, and comprehensive event registration features.
