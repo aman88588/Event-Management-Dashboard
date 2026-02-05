@@ -37,16 +37,19 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   // --- Auth Setup ---
+  const isProduction = process.env.NODE_ENV === "production";
+
   app.use(
     session({
       store: storage.sessionStore,
       secret: process.env.SESSION_SECRET || "change-this-secret-in-production",
       resave: false,
       saveUninitialized: false,
+      proxy: isProduction, // Trust proxy in production
       cookie: {
-        secure: app.get("env") === "production",
+        secure: isProduction, // Use secure cookies in production
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: isProduction ? "none" : "lax", // 'none' for cross-site in production
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       },
     })
@@ -192,6 +195,10 @@ export async function registerRoutes(
       });
       const input = bodySchema.parse(req.body);
       const event = await storage.createEvent({ ...input, organizerId: (req.user as any).id });
+
+      // Broadcast update
+      broadcast({ type: 'NEW_EVENT', event });
+
       res.status(201).json(event);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -225,6 +232,10 @@ export async function registerRoutes(
     }
 
     await storage.deleteEvent(event.id);
+
+    // Broadcast update
+    broadcast({ type: 'DELETE_EVENT', eventId: event.id });
+
     res.status(204).send();
   });
 
