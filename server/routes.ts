@@ -25,6 +25,13 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+// Helper to remove password from user object before sending to client
+function sanitizeUser(user: any) {
+  if (!user) return user;
+  const { password, ...safeUser } = user;
+  return safeUser;
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -33,10 +40,15 @@ export async function registerRoutes(
   app.use(
     session({
       store: storage.sessionStore,
-      secret: process.env.SESSION_SECRET || "secret",
+      secret: process.env.SESSION_SECRET || "change-this-secret-in-production",
       resave: false,
       saveUninitialized: false,
-      cookie: { secure: app.get("env") === "production" },
+      cookie: {
+        secure: app.get("env") === "production",
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      },
     })
   );
 
@@ -96,9 +108,15 @@ export async function registerRoutes(
       }
       const hashedPassword = await hashPassword(input.password);
       const user = await storage.createUser({ ...input, password: hashedPassword });
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.status(201).json(user);
+
+      // Regenerate session to prevent session fixation attacks
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) return next(regenerateErr);
+
+        req.login(user, (loginErr) => {
+          if (loginErr) return next(loginErr);
+          res.status(201).json(sanitizeUser(user));
+        });
       });
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -108,20 +126,41 @@ export async function registerRoutes(
     }
   });
 
-  app.post(api.auth.login.path, passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post(api.auth.login.path, (req, res, next) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) return next(err);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+
+      // Regenerate session to prevent session fixation attacks
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) return next(regenerateErr);
+
+        req.login(user, (loginErr) => {
+          if (loginErr) return next(loginErr);
+          res.status(200).json(sanitizeUser(user));
+        });
+      });
+    })(req, res, next);
   });
 
   app.post(api.auth.logout.path, (req, res, next) => {
-    req.logout((err) => {
-      if (err) return next(err);
-      res.status(200).json({ message: "Logged out" });
+    req.logout((logoutErr) => {
+      if (logoutErr) return next(logoutErr);
+
+      // Destroy the session completely
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) return next(destroyErr);
+        res.clearCookie("connect.sid");
+        res.status(200).json({ message: "Logged out" });
+      });
     });
   });
 
   app.get(api.auth.me.path, (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
-    res.status(200).json(req.user);
+    res.status(200).json(sanitizeUser(req.user));
   });
 
   // Events
@@ -129,7 +168,7 @@ export async function registerRoutes(
     const events = await storage.getEvents();
     // Add isRegistered flag if user is logged in
     const userId = (req.user as any)?.id;
-    
+
     const eventsWithStatus = await Promise.all(events.map(async (event) => {
       let isRegistered = false;
       if (userId) {
@@ -165,7 +204,7 @@ export async function registerRoutes(
   app.get(api.events.get.path, async (req, res) => {
     const event = await storage.getEvent(Number(req.params.id));
     if (!event) return res.status(404).json({ message: "Event not found" });
-    
+
     // Check registration status
     let isRegistered = false;
     if (req.isAuthenticated()) {
@@ -180,7 +219,7 @@ export async function registerRoutes(
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const event = await storage.getEvent(Number(req.params.id));
     if (!event) return res.status(404).json({ message: "Not found" });
-    
+
     if ((req.user as any).role !== 'organizer' || event.organizerId !== (req.user as any).id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -192,10 +231,10 @@ export async function registerRoutes(
   // Registrations
   app.post(api.registrations.create.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
-    
+
     const eventId = Number(req.params.id);
     const userId = (req.user as any).id;
-    
+
     const event = await storage.getEvent(eventId);
     if (!event) return res.status(404).json({ message: "Event not found" });
 
@@ -211,7 +250,7 @@ export async function registerRoutes(
     }
 
     const reg = await storage.createRegistration(userId, eventId);
-    
+
     // Broadcast update
     broadcast({ type: 'UPDATE_REGISTRATIONS', eventId });
 
@@ -233,7 +272,7 @@ export async function registerRoutes(
         password: hashedPassword,
         role: 'user'
       });
-      
+
       await storage.createEvent({
         organizerId: org.id,
         title: "Tech Conference 2024",
@@ -242,7 +281,7 @@ export async function registerRoutes(
         location: "San Francisco",
         maxParticipants: 100
       });
-      
+
       await storage.createEvent({
         organizerId: org.id,
         title: "Local Meetup",
